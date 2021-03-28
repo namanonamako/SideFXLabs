@@ -10,6 +10,7 @@ Shader "sidefx/vertex_soft_body_shader" {
 		_boundingMin("Bounding Min", Float) = 1.0
 		_numOfFrames("Number Of Frames", int) = 240
 		_speed("Speed", Float) = 0.33
+		_timeoffset("Time Offset", Range(0,1)) = 0.0
 		[MaterialToggle] _pack_normal ("Pack Normal", Float) = 0
 		_posTex ("Position Map (RGB)", 2D) = "white" {}
 		_nTex ("Normal Map (RGB)", 2D) = "grey" {}
@@ -32,6 +33,7 @@ Shader "sidefx/vertex_soft_body_shader" {
 		uniform float _boundingMax;
 		uniform float _boundingMin;
 		uniform float _speed;
+		uniform float _timeoffset;
 		uniform int _numOfFrames;
 
 		struct Input {
@@ -52,13 +54,13 @@ Shader "sidefx/vertex_soft_body_shader" {
 		//vertex function
 		void vert(inout appdata_full v){
 			//calcualte uv coordinates
-			float timeInFrames = ((ceil(frac(-_Time.y * _speed) * _numOfFrames))/_numOfFrames) + (1.0/_numOfFrames);
+			float timeInFrames = ((ceil(frac(-_Time.y * _speed - _timeoffset) * _numOfFrames))/_numOfFrames) + (1.0/_numOfFrames);
 
 			//get position and normal from textures
 			float4 texturePos = tex2Dlod(_posTex,float4(v.texcoord1.x, (timeInFrames + v.texcoord1.y), 0, 0));
 			float3 textureN = tex2Dlod(_nTex,float4(v.texcoord1.x, (timeInFrames + v.texcoord1.y), 0, 0));
 			//comment out the line below if your colour space is set to linear
-			texturePos.xyz = pow(texturePos.xyz, 2.2);
+			//texturePos.xyz = pow(texturePos.xyz, 2.2);
 
 			//expand normalised position texture values to world space
 			float expand = _boundingMax - _boundingMin;
