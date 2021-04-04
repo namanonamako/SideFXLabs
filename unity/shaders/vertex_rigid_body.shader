@@ -12,6 +12,7 @@ Shader "sidefx/vertex_rigid_body_shader" {
 		_boundingMin1("Bounding Min1", Float) = 1.0
 		_numOfFrames("Number Of Frames", int) = 240
 		_speed("Speed", Float) = 0.33
+		[MaterialToggle] _Lerp("Lerp", Float) = 0
 		_timeoffset("Time Offset", Range(0,1)) = 0.0
 		_posTex ("Position Map (RGB)", 2D) = "white" {}
 		_rotTex ("Rotation Map (RGB)", 2D) = "grey" {}
@@ -38,6 +39,7 @@ Shader "sidefx/vertex_rigid_body_shader" {
 		uniform int _numOfFrames;
 		uniform float _speed;
 		uniform float _timeoffset;
+		uniform int _Lerp;
 
 		struct Input {
 			float2 uv_MainTex;
@@ -55,14 +57,33 @@ Shader "sidefx/vertex_rigid_body_shader" {
 			// put more per-instance properties here
 		UNITY_INSTANCING_BUFFER_END(Props)
 
+		float4 Slerp(float4 p0, float4 p1, float t)
+		{
+			float dotp = dot(normalize(p0), normalize(p1));
+			if ((dotp > 0.9999) || (dotp < -0.9999))
+			{
+				if (t <= 0.5)
+					return p0;
+				return p1;
+			}
+			float theta = acos(dotp * 3.14159 / 180.0);
+			float4 P = ((p0*sin((1 - t)*theta) + p1 * sin(t*theta)) / sin(theta));
+			P.w = 1;
+			return P;
+		}
+
+
 		//vertex function
 		void vert(inout appdata_full v){
 			//calculate uv coordinates
-			float timeInFrames = ((ceil(frac(_Time.y * _speed + _timeoffset) * _numOfFrames))/_numOfFrames);// + (1.0/_numOfFrames);
+			float timeInFrames = ((ceil(frac(_Time.y * _speed + _timeoffset) * _numOfFrames))/_numOfFrames) + (1.0/_numOfFrames);
 
 			//get position and rotation(quaternion) from textures
 			float3 texturePos = tex2Dlod(_posTex,float4(v.texcoord1.x, (1 - timeInFrames) + v.texcoord1.y, 0, 0));
 			float4 textureRot = tex2Dlod(_rotTex,float4(v.texcoord1.x, (1 - timeInFrames) + v.texcoord1.y, 0, 0));
+			float3 texturePos2 = tex2Dlod(_posTex, float4(v.texcoord1.x, (1 - timeInFrames) -(1.0 / _numOfFrames) + v.texcoord1.y, 0, 0));
+			float4 textureRot2 = tex2Dlod(_rotTex, float4(v.texcoord1.x, (1 - timeInFrames) -(1.0 / _numOfFrames) + v.texcoord1.y, 0, 0));
+			texturePos = lerp(texturePos, texturePos2, _Lerp * frac(frac(_Time.y* _speed + _timeoffset) * _numOfFrames));
 			//comment out the 2 lines below if your colour space is set to linear
 			//texturePos.xyz = pow(texturePos.xyz, 2.2);
 			//textureRot.xyz = pow(textureRot.xyz, 2.2);
@@ -87,16 +108,22 @@ Shader "sidefx/vertex_rigid_body_shader" {
 			//calculate rotation
 			textureRot *= 2.0;
 			textureRot -= 1.0;
+			textureRot2 *= 2.0;
+			textureRot2 -= 1.0;
 			//textureRot.xyz *= -1;
 			//textureRot = textureRot.rbga;
 
 			float3 rotated = atOrigin + 2.0 * cross(textureRot.xyz, cross(textureRot.xyz, atOrigin) + textureRot.w * atOrigin);
+			float3 rotated2 = atOrigin + 2.0 * cross(textureRot2.xyz, cross(textureRot2.xyz, atOrigin) + textureRot2.w * atOrigin);
+			rotated = lerp(rotated, rotated2, _Lerp * frac(frac(_Time.y * _speed + _timeoffset) * _numOfFrames));
 
 			v.vertex.xyz = rotated;
 			v.vertex.xyz += texturePos.xyz;
 
 			//calculate normal
 			float3 rotatedNormal = v.normal + 2.0 * cross(textureRot.xyz, cross(textureRot.xyz, v.normal) + textureRot.w * v.normal);
+			float3 rotatedNormal2 = v.normal + 2.0 * cross(textureRot2.xyz, cross(textureRot2.xyz, v.normal) + textureRot2.w * v.normal);
+			rotatedNormal = lerp(rotatedNormal, rotatedNormal2, _Lerp * frac(frac(_Time.y * _speed + _timeoffset) * _numOfFrames));
 			v.normal = rotatedNormal;
 			v.color.rgb = texturePos;
 		}
