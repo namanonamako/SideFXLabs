@@ -10,6 +10,7 @@ Shader "sidefx/vertex_soft_body_shader" {
 		_boundingMin("Bounding Min", Float) = 1.0
 		_numOfFrames("Number Of Frames", int) = 240
 		_speed("Speed", Float) = 0.33
+		[MaterialToggle] _Lerp("Lerp(UseNormalTexutreOnly)", Float) = 0
 		_timeoffset("Time Offset", Range(0,1)) = 0.0
 		[MaterialToggle] _pack_normal ("Pack Normal", Float) = 0
 		_posTex ("Position Map (RGB)", 2D) = "white" {}
@@ -35,6 +36,7 @@ Shader "sidefx/vertex_soft_body_shader" {
 		uniform float _speed;
 		uniform float _timeoffset;
 		uniform int _numOfFrames;
+		uniform int _Lerp;
 
 		struct Input {
 			float2 uv_MainTex;
@@ -57,8 +59,12 @@ Shader "sidefx/vertex_soft_body_shader" {
 			float timeInFrames = ((ceil(frac(-_Time.y * _speed - _timeoffset) * _numOfFrames))/_numOfFrames) + (1.0/_numOfFrames);
 
 			//get position and normal from textures
-			float4 texturePos = tex2Dlod(_posTex,float4(v.texcoord1.x, (timeInFrames + v.texcoord1.y), 0, 0));
-			float3 textureN = tex2Dlod(_nTex,float4(v.texcoord1.x, (timeInFrames + v.texcoord1.y), 0, 0));
+			float4 texturePos = tex2Dlod(_posTex, float4(v.texcoord1.x, (timeInFrames + v.texcoord1.y), 0, 0));
+			float3 textureN = tex2Dlod(_nTex, float4(v.texcoord1.x, (timeInFrames + v.texcoord1.y), 0, 0));
+			float4 texturePos2 = tex2Dlod(_posTex, float4(v.texcoord1.x, (timeInFrames + (1.0 / _numOfFrames) + v.texcoord1.y), 0, 0));
+			float3 textureN2 = tex2Dlod(_nTex, float4(v.texcoord1.x, (timeInFrames + (1.0 / _numOfFrames) + v.texcoord1.y), 0, 0));
+			texturePos = lerp(texturePos, texturePos2, _Lerp * frac(frac(-_Time.y* _speed - _timeoffset) * _numOfFrames));
+			textureN = lerp(textureN, textureN2, _Lerp * frac(frac(-_Time.y * _speed - _timeoffset) * _numOfFrames));
 			//comment out the line below if your colour space is set to linear
 			//texturePos.xyz = pow(texturePos.xyz, 2.2);
 
