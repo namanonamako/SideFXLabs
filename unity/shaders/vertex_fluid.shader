@@ -64,14 +64,15 @@ Shader "sidefx/vertex_fluid_shader" {
 			float3 textureN = tex2Dlod(_nTex,float4(v.texcoord.x, (timeInFrames + v.texcoord.y), 0, 0));
 			float3 textureCd = tex2Dlod(_colorTex,float4(v.texcoord.x, (timeInFrames + v.texcoord.y), 0, 0));
 			//comment out the line below if your colour space is set to linear
-			texturePos.xyz = pow(texturePos.xyz, 2.2)
+			//texturePos.xyz = pow(texturePos.xyz, 2.2)
 
 			//expand normalised position texture values to world space
 			float expand = _boundingMax - _boundingMin;
 			texturePos.xyz *= expand;
 			texturePos.xyz += _boundingMin;
 			// texturePos.x *= -1;  //flipped to account for right-handedness of unity
-			v.vertex.xyz = texturePos.xyz;  //swizzle y and z because textures are exported with z-up
+			//texturePos.xyz = texturePos.xzy;  //swizzle y and z because textures are exported with z-up
+			v.vertex.xyz = texturePos.xyz;
 
 			//calculate normal
 			if (_pack_normal){
