@@ -12,6 +12,7 @@ Shader "sidefx/vertex_fluid_shader" {
 		_boundingMin("Bounding Min", Float) = 1.0
 		_numOfFrames("Number Of Frames", int) = 240
 		_speed("Speed", Float) = 0.33
+		_timeoffset("Time Offset", Range(0,1)) = 0.0
 		[MaterialToggle] _pack_normal ("Pack Normal", Float) = 0
 		_posTex ("Position Map (RGB)", 2D) = "white" {}
 		_nTex ("Normal Map (RGB)", 2D) = "grey" {}
@@ -36,6 +37,7 @@ Shader "sidefx/vertex_fluid_shader" {
 		uniform float _boundingMax;
 		uniform float _boundingMin;
 		uniform float _speed;
+		uniform float _timeoffset;
 		uniform int _numOfFrames;
 
 		struct Input {
@@ -57,7 +59,7 @@ Shader "sidefx/vertex_fluid_shader" {
 		//vertex function
 		void vert(inout appdata_full v){
 			//calculate uv coordinates
-			float timeInFrames = ((ceil(frac(-_Time.y * _speed) * _numOfFrames))/_numOfFrames) + (1.0/_numOfFrames);
+			float timeInFrames = ((ceil(frac(-_Time.y * _speed - _timeoffset) * _numOfFrames)) / _numOfFrames) +(1.0 / _numOfFrames);
 			
 			//get position, normal and colour from textures
 			float4 texturePos = tex2Dlod(_posTex,float4(v.texcoord.x, (timeInFrames + v.texcoord.y), 0, 0));
