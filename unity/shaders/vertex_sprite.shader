@@ -64,7 +64,7 @@ Shader "sidefx/vertex_sprite_shader" {
 			float4 texturePos = tex2Dlod(_posTex,float4(v.texcoord1.x, (timeInFrames + v.texcoord1.y), 0, 0));
 			float3 textureCd = tex2Dlod(_colorTex,float4(v.texcoord1.x, (timeInFrames + v.texcoord1.y), 0, 0));
 			//comment out the line below if your colour space is set to linear
-			texturePos.xyz = pow(texturePos.xyz, 2.2)
+			texturePos.xyz = pow(texturePos.xyz, 2.2);
 
 			//expand normalised position texture values to world space
 			float expand = _boundingMax - _boundingMin;
